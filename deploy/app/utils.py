@@ -24,6 +24,11 @@ def get_week_count(at=None):
     else:
         return datetime.datetime.now().isocalendar()[1]
 
+def get_year(at=None):
+    if at:
+        return at.isocalendar()[0]
+    else:
+        return datetime.datetime.now().isocalendar()[0]
 
 def get_this_monday():
     today = datetime.date.today()
@@ -36,8 +41,11 @@ def is_allowed_file(filename):
            filename.rsplit('.', 1)[1] in {'png', 'jpg', 'jpeg', 'gif'}
 
 
-def get_last_week():
-    return datetime.datetime.now() - datetime.timedelta(days=7)
+def get_last_week(at=None):
+    if at:
+        return at - datetime.timedelta(days=7)
+    else:
+        return datetime.datetime.now() - datetime.timedelta(days=7)
 
 
 def get_last_week_start_at():

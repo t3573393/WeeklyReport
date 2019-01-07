@@ -11,7 +11,7 @@ from .. import db
 from ..email import send_email
 from ..models import Permission, User, Report, Department
 from ..utils import get_week_count, permission_required, get_this_monday, \
-    get_last_week, get_last_week_start_at, get_last_week_end_at, get_last_week_content
+    get_last_week, get_last_week_start_at, get_last_week_end_at, get_last_week_content, get_year
 
 
 @report.route('/write/', methods=['GET', 'POST'])
@@ -19,17 +19,26 @@ from ..utils import get_week_count, permission_required, get_this_monday, \
 def write():
     form = WriteForm()
     last_content_display = ""
+    week_num = get_week_count()
     report = Report.query.filter_by(
         author_id=current_user.id,
-        week_count=get_week_count(),
-        year=datetime.today().year
+        week_count=week_num,
+        year=get_year(datetime.today())
     ).first()
-    
-    last_report = Report.query.filter_by(
-        author_id=current_user.id,
-        week_count=get_week_count() - 1,
-        year=datetime.today().year
-    ).first()
+
+    if week_num > 1:
+        last_report = Report.query.filter_by(
+            author_id=current_user.id,
+            week_count=get_week_count() - 1,
+            year=get_year(datetime.today())
+        ).first()
+    else:
+        last_week_date = get_last_week()
+        last_report = Report.query.filter_by(
+            author_id=current_user.id,
+            week_count=get_week_count(last_week_date),
+            year=get_year(last_week_date)
+        ).first()
             
     if form.submit.data and form.validate_on_submit():
         if report:
@@ -42,7 +51,7 @@ def write():
                 last_content=form.last_content.data.replace('<br>', ''),
                 author_id=current_user.id,
                 week_count=get_week_count(),
-                year=datetime.today().year)
+                year=get_year(datetime.today()))
             db.session.add(report)
         db.session.commit()
         flash(_('Successfully submitted report'))
@@ -75,15 +84,25 @@ def write_last_week():
     form = WriteForm()
     last_content_display = ""
     
+    last_week_date = get_last_week()
+    week_num = get_week_count(last_week_date)
     report = Report.query.filter_by(
         author_id=current_user.id,
-        week_count=get_week_count(get_last_week()),
-        year=get_last_week().year).first()
-        
-    last_report = Report.query.filter_by(
-        author_id=current_user.id,
-        week_count=get_week_count(get_last_week()) - 1,
-        year=get_last_week().year).first()
+        week_count=week_num,
+        year=get_year(last_week_date)).first()
+    
+    if week_num > 1:
+        last_report = Report.query.filter_by(
+            author_id=current_user.id,
+            week_count=week_num - 1,
+            year=get_year(last_week_date)
+        ).first()
+    else:
+        last_report = Report.query.filter_by(
+            author_id=current_user.id,
+            week_count=get_week_count(get_last_week(last_week_date)),
+            year=get_year(get_last_week(last_week_date))
+        ).first()
 
     if form.submit.data and form.validate_on_submit():
         if report:
@@ -94,7 +113,7 @@ def write_last_week():
                 content=form.body.data.replace('<br>', ''),
                 author_id=current_user.id,
                 week_count=get_week_count(get_last_week()),
-                year=get_last_week().year)
+                year=get_year(get_last_week()))
         db.session.add(report)
         db.session.commit()
         flash(_('Successfully submitted report'))
@@ -128,7 +147,7 @@ def read(page_count=1):
     if not Report.query.filter_by(
             author_id=current_user.id,
             week_count=get_week_count(get_last_week()),
-            year=get_last_week().year).first():
+            year=get_year(get_last_week())).first():
         flash(Markup(_("Do you want to <a href='/report/write/last_week'>"
                        "edit last week's report?</a>")))
 
@@ -138,7 +157,7 @@ def read(page_count=1):
     if not Report.query.filter_by(
             author_id=current_user.id,
             week_count=get_week_count(),
-            year=datetime.today().year):
+            year=get_year(datetime.today())):
         flash(_("You haven't submitted your weekly report"))
     return render_template('report/read.html', pagination=pagination)
 
@@ -258,7 +277,7 @@ def statistics_department():
     submitted_users = [
         report.author for report in qst.filter_by(
             week_count=get_week_count(),
-            year=datetime.today().year)]
+            year=get_year(datetime.today()))]
     unsubmitted_users = set(dept_users) - set(submitted_users)
 
     data = {'已交': len(submitted_users),
@@ -289,7 +308,7 @@ def statistics_department_last_week():
     submitted_users = [
         report.author for report in qst.filter_by(
             week_count=get_week_count(get_last_week()),
-            year=get_last_week().year)]
+            year=get_year(get_last_week()))]
     unsubmitted_users = set(dept_users) - set(submitted_users)
 
     data = {'已交': len(submitted_users),
@@ -325,7 +344,7 @@ def statistics_crew():
         submitted_users = [
             report.author for report in qst.filter_by(
                 week_count=get_week_count(),
-                year=datetime.today().year)]
+                year=get_year(datetime.today()))]
 
         unsubmitted_users = set(dept_users)-set(submitted_users)
         reminder_emails |= set([user.email for user in unsubmitted_users])
@@ -379,7 +398,7 @@ def statistics_crew_last_week():
         submitted_users = [
             report.author for report in qst.filter_by(
                 week_count=get_week_count(get_last_week()),
-                year=get_last_week().year)]
+                year=get_year(get_last_week()))]
 
         unsubmitted_users = set(dept_users)-set(submitted_users)
         reminder_emails |= set([user.email for user in unsubmitted_users])

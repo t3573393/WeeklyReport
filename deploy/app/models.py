@@ -5,7 +5,7 @@ from flask import current_app
 from flask_login import UserMixin, AnonymousUserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from . import db, login_manager
-from .utils import get_week_count, get_last_week
+from .utils import get_week_count, get_last_week, get_year
 
 
 class Permission:
@@ -184,14 +184,14 @@ class Report(db.Model):
     @property
     def is_of_current_week(self):
         if self.week_count == get_week_count() \
-                and self.year == datetime.today().year:
+                and self.year == get_year(datetime.today()):
             return True
         return False
 
     @property
     def is_of_last_week(self):
         if self.week_count == get_week_count(get_last_week()) \
-                and self.year == get_last_week().year:
+                and self.year == get_year(get_last_week()):
             return True
         return False
         
