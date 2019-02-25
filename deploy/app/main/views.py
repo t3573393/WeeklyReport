@@ -112,7 +112,7 @@ class ReportAdminView(WeeklyReportModelView):
     column_list = ('author', 'department', 'year', 'week_count', 'last_content',
                    'content', 'created_at')
     column_default_sort = ('created_at', True)
-    column_searchable_list = ('week_count',)
+    column_searchable_list = ('year','week_count',)
     form_columns = ['created_at', 'week_count', 'year', 'content']
     list_template = '/admin/model/report_list_template.html'
     can_edit = True
